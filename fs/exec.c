@@ -1869,7 +1869,7 @@ static int __do_newexecve_file(int fd, int p,struct filename *filename,
 	retval = PTR_ERR(file);
 	if (IS_ERR(file))
 		goto out_unmark;
-
+	current-> pred = p;
 	sched_exec();
 
 	bprm->file = file;
