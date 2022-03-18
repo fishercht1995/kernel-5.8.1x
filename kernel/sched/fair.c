@@ -4422,9 +4422,21 @@ wakeup_preempt_entity(struct sched_entity *curr, struct sched_entity *se);
 static struct sched_entity *
 pick_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *curr)
 {
+	//struct task_struct *pe = task_of(curr);
+	//if (pe->pred == 1)
+	//	printk("This pick entity pred of 1\n");
+	//printk("haha\n");
 	struct sched_entity *left = __pick_first_entity(cfs_rq);
 	struct sched_entity *se;
-
+	//if(entity_is_task(curr)){
+	//	struct task_struct *pe = task_of(curr);
+	//	if(curr != NULL && pe->pred == 1){
+	//		pe = task_of(curr);
+	//		//u64 slice = sched_vslice(cfs_rq, curr);
+	//		//curr->vruntime -= slice;
+	//		//update_min_vruntime(cfs_rq);
+	//	}
+	//}
 	/*
 	 * If curr is set we have to see if its left of the leftmost entity
 	 * still in the tree, provided there was anything in the tree at all.
@@ -6996,10 +7008,13 @@ again:
 		 * forget we've ever seen it.
 		 */
 		if (curr) {
-			if (curr->on_rq)
-				update_curr(cfs_rq);
-			else
+			if (curr->on_rq){
+				if (prev->pred !=1){
+					update_curr(cfs_rq);
+				}
+			}else{
 				curr = NULL;
+			}
 
 			/*
 			 * This call to check_cfs_rq_runtime() will do the

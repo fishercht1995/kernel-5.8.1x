@@ -1,1 +1,1 @@
-/linux-5.8.1/scripts/gdb/vmlinux-gdb.py
+/kernel-5.8.1x/scripts/gdb/vmlinux-gdb.py
