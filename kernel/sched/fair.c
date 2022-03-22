@@ -6990,6 +6990,13 @@ again:
 	if (!prev || prev->sched_class != &fair_sched_class)
 		goto simple;
 
+	if (prev && prev->pred != 0){
+                struct sched_entity *s;
+		s = &prev->se;
+		printk("pick next task fair %d %llu %llu\n",prev->pred,cfs_rq->min_vruntime,s->vruntime);
+                //s->vruntime = cfs_rq->min_vruntime;
+        }
+
 	/*
 	 * Because of the set_next_buddy() in dequeue_task_fair() it is rather
 	 * likely that a next task is from the same cgroup as the current.
@@ -7009,9 +7016,7 @@ again:
 		 */
 		if (curr) {
 			if (curr->on_rq){
-				if (prev->pred !=1){
-					update_curr(cfs_rq);
-				}
+				update_curr(cfs_rq);
 			}else{
 				curr = NULL;
 			}
@@ -7031,7 +7036,17 @@ again:
 				goto simple;
 			}
 		}
-
+		/*
+		if(curr && prev->pred != 0){
+			struct sched_entity *left = __pick_first_entity(cfs_rq);
+			printk("curr: %llu; left: %llu\n", curr->vruntime,left->vruntime);
+			if(left){
+				if(curr->on_rq){
+					curr->vruntime = left->vruntime-1;
+				}
+			}
+		}
+		*/
 		se = pick_next_entity(cfs_rq, curr);
 		cfs_rq = group_cfs_rq(se);
 	} while (cfs_rq);

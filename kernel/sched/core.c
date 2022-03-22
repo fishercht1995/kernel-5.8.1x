@@ -4183,8 +4183,14 @@ static void __sched notrace __schedule(bool preempt)
 		}
 		switch_count = &prev->nvcsw;
 	}
-
-	next = pick_next_task(rq, prev, &rf);
+	struct sched_entity *s;
+	s = &prev->se;
+	if(s->on_rq && prev->pred != 0){
+		next = prev;
+		printk("Here another loop\n");
+	}else{
+		next = pick_next_task(rq, prev, &rf);
+	}
 	clear_tsk_need_resched(prev);
 	clear_preempt_need_resched();
 
