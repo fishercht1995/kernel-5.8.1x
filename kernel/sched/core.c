@@ -7,15 +7,15 @@
  *  Copyright (C) 1991-2002  Linus Torvalds
  */
 #include "sched.h"
-
 #include <linux/nospec.h>
 
 #include <linux/kcov.h>
 #include <linux/scs.h>
 
+#include <linux/random.h>
+
 #include <asm/switch_to.h>
 #include <asm/tlb.h>
-
 #include "../workqueue_internal.h"
 #include "../../fs/io-wq.h"
 #include "../smpboot.h"
@@ -4185,12 +4185,94 @@ static void __sched notrace __schedule(bool preempt)
 	}
 	struct sched_entity *s;
 	s = &prev->se;
-	if(s->on_rq && prev->pred != 0){
+	int action ;
+	//default action
+	action = 0;	
+	int reward;
+	reward = 0;
+	if(prev->pred != 0){
+		//q: how to update reward, since reward and next state should be on the next step, 
+		//herefore, for every rq, it should store prev state tuple, prev action
+		if(!s->on_rq){
+			//update rewards
+			//printk("placeholder\n");
+			if(rq->lastAction==1){
+				reward = 100;
+			}
+		}else{
+			if(rq->lastAction==1){
+				reward = -10;
+			}
+		}
+		//update qtable;
+		//Q[state,action] = Q[state,action] + lr*(reward+gamma*max(Q[newstate,:])-Q[state,action]
+		if(rq->lastState && rq->lastAction == 1){
+
+			int prev_Q;
+			int new_Q;
+			prev_Q = (rq->qtable)[rq->lasts1][rq->lasts2][rq->lastAction];
+			if ((rq->qtable)[prev->pred][prev->nloop][0] <= (rq->qtable)[prev->pred][prev->nloop][1]){
+				new_Q = (rq->qtable)[prev->pred][prev->nloop][1];
+			}else{
+				new_Q = (rq->qtable)[prev->pred][prev->nloop][0];
+			}
+			int update_Q;
+			update_Q = prev_Q + 2 * (reward + 3*new_Q/10 - prev_Q)/10;
+			(rq->qtable)[rq->lasts1][rq->lasts2][rq->lastAction] = update_Q;
+			printk("update Q %d\n", update_Q);
+		}
+		//int qv;
+		//pick action
+		//if(prev->rn != 0){
+		unsigned rn;
+		int lessthan100;
+		get_random_bytes(&rn, sizeof(rn));
+		lessthan100 = rn % 100;
+		prev->rn = lessthan100;
+		printk("q value: pred %d, loop %d 0: %d 1: %d\n",prev->pred,prev->nloop,(rq->qtable)[prev->pred][prev->nloop][0],(rq->qtable)[prev->pred][prev->nloop][1]);
+		//}
+		printk("q value: pred %d, loop %d 0: %d 1: %d\n",prev->pred,prev->nloop,(rq->qtable)[prev->pred][prev->nloop][0],(rq->qtable)[prev->pred][prev->nloop][1]);
+		if(prev->rn < 10){
+			action = 0;
+		}else if(prev->rn < 20){
+			action = 1;
+		}else{
+			if ((rq->qtable)[prev->pred][prev->nloop][0] < (rq->qtable)[prev->pred][prev->nloop][1]){
+				action = 1;
+			}else{
+				action = 0;
+			}
+		}
+		//prev->actions[prev->nloop] = action;
+		//qv = (rq->qtable)[0][0][0];
+		//printk("Here another loop %d\n",qv);
+	        //(rq->qtable)[0][0][0] = 1;
+		//increment nloop of task
+		if(prev->nloop < 90){
+			prev->nloop += 1;
+		}
+		if(!s->on_rq){
+			action = 0;
+			rq->lastState = 0;
+		}else{
+			rq->lastState = 1;
+		}
+		//update prev state
+		rq->lastAction = action;
+		rq->lasts1 = prev->pred;
+		rq->lasts2 = prev->nloop;
+	}
+	if(prev->pred>0){
+		u64 n2 = rq_clock_task(rq);
+        	u64 n1 = rq->ghoststart;
+                printk("schedule period %llu %llu %llu %llu\n",n1,n2,n2-n1,(n2-n1)/1000000);
+        }
+	if(action){
 		next = prev;
-		printk("Here another loop\n");
 	}else{
 		next = pick_next_task(rq, prev, &rf);
 	}
+	//next = pick_next_task(rq, prev, &rf);
 	clear_tsk_need_resched(prev);
 	clear_preempt_need_resched();
 
@@ -4227,7 +4309,9 @@ static void __sched notrace __schedule(bool preempt)
 		rq->clock_update_flags &= ~(RQCF_ACT_SKIP|RQCF_REQ_SKIP);
 		rq_unlock_irq(rq, &rf);
 	}
-
+	if(prev->pred>0){
+		rq->ghoststart = rq_clock_task(rq);
+	}
 	balance_callback(rq);
 }
 
@@ -6784,6 +6868,17 @@ void __init sched_init(void)
 		rq->nr_running = 0;
 		rq->calc_load_active = 0;
 		rq->calc_load_update = jiffies + LOAD_FREQ;
+		//float ***qt;
+		//int j;
+		//qt =  malloc(1000 * sizeof(float **));
+		//for(i=0; i<1000; i++){
+    		//	qt[i] =  malloc((100+1) * sizeof(float *));
+		//	for(j=0; j<=100;j++)
+      		//	qt[i][j] = malloc((2+1) * sizeof(float));
+  		//}
+		//rq->qtable = qt;
+		//float qt[1000][100][2];
+		//rq->qtable = qt;
 		init_cfs_rq(&rq->cfs);
 		init_rt_rq(&rq->rt);
 		init_dl_rq(&rq->dl);

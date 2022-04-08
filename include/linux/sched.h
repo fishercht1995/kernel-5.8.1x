@@ -681,6 +681,9 @@ struct task_struct {
 	struct sched_entity		se;
 	struct sched_rt_entity		rt;
 	int				pred;
+	int				nloop;	
+	int				rn;
+	u64				ghoststart;
 #ifdef CONFIG_CGROUP_SCHED
 	struct task_group		*sched_task_group;
 #endif

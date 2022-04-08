@@ -880,6 +880,12 @@ struct rq {
 	 * remote CPUs use both these fields when doing load calculation.
 	 */
 	unsigned int		nr_running;
+	int			qtable[1000][100][2];
+	int			lastAction;
+	int			lasts1;
+	int			lasts2;
+	int			lastState;
+	u64			ghoststart;
 #ifdef CONFIG_NUMA_BALANCING
 	unsigned int		nr_numa_running;
 	unsigned int		nr_preferred_running;
