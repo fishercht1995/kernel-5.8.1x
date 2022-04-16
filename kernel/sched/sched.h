@@ -880,7 +880,7 @@ struct rq {
 	 * remote CPUs use both these fields when doing load calculation.
 	 */
 	unsigned int		nr_running;
-	int			qtable[1000][100][2];
+	int			qtable[1000][2000][2];
 	int			lastAction;
 	int			lasts1;
 	int			lasts2;

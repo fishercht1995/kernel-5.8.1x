@@ -1,7 +1,7 @@
-/* This file is auto generated, version 47 */
+/* This file is auto generated, version 15 */
 /* SMP */
 #define UTS_MACHINE "x86_64"
-#define UTS_VERSION "#47 SMP Fri Apr 8 00:20:31 UTC 2022"
+#define UTS_VERSION "#15 SMP Sat Apr 16 23:11:38 UTC 2022"
 #define LINUX_COMPILE_BY "root"
-#define LINUX_COMPILE_HOST "kernelx"
-#define LINUX_COMPILER "gcc (Ubuntu 8.4.0-3ubuntu2) 8.4.0, GNU ld (GNU Binutils for Ubuntu) 2.34"
+#define LINUX_COMPILE_HOST "kernely"
+#define LINUX_COMPILER "gcc (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0, GNU ld (GNU Binutils for Ubuntu) 2.34"

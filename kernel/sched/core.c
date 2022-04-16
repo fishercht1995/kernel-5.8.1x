@@ -11,7 +11,7 @@
 
 #include <linux/kcov.h>
 #include <linux/scs.h>
-
+#include <linux/ktime.h>
 #include <linux/random.h>
 
 #include <asm/switch_to.h>
@@ -4204,6 +4204,11 @@ static void __sched notrace __schedule(bool preempt)
 				reward = -10;
 			}
 		}
+		int remain;
+		u64 now = rq_clock_task(rq);
+                u64 new_remain = prev->se.sum_exec_runtime + now - prev->se.exec_start;
+
+                remain = (int)(new_remain/10000000);
 		//update qtable;
 		//Q[state,action] = Q[state,action] + lr*(reward+gamma*max(Q[newstate,:])-Q[state,action]
 		if(rq->lastState && rq->lastAction == 1){
@@ -4211,10 +4216,10 @@ static void __sched notrace __schedule(bool preempt)
 			int prev_Q;
 			int new_Q;
 			prev_Q = (rq->qtable)[rq->lasts1][rq->lasts2][rq->lastAction];
-			if ((rq->qtable)[prev->pred][prev->nloop][0] <= (rq->qtable)[prev->pred][prev->nloop][1]){
-				new_Q = (rq->qtable)[prev->pred][prev->nloop][1];
+			if ((rq->qtable)[prev->pred][remain][0] <= (rq->qtable)[prev->pred][remain][1]){
+				new_Q = (rq->qtable)[prev->pred][remain][1];
 			}else{
-				new_Q = (rq->qtable)[prev->pred][prev->nloop][0];
+				new_Q = (rq->qtable)[prev->pred][remain][0];
 			}
 			int update_Q;
 			update_Q = prev_Q + 2 * (reward + 3*new_Q/10 - prev_Q)/10;
@@ -4229,15 +4234,27 @@ static void __sched notrace __schedule(bool preempt)
 		get_random_bytes(&rn, sizeof(rn));
 		lessthan100 = rn % 100;
 		prev->rn = lessthan100;
-		printk("q value: pred %d, loop %d 0: %d 1: %d\n",prev->pred,prev->nloop,(rq->qtable)[prev->pred][prev->nloop][0],(rq->qtable)[prev->pred][prev->nloop][1]);
 		//}
-		printk("q value: pred %d, loop %d 0: %d 1: %d\n",prev->pred,prev->nloop,(rq->qtable)[prev->pred][prev->nloop][0],(rq->qtable)[prev->pred][prev->nloop][1]);
+		//printk("q value: pred %d, loop %d 0: %d 1: %d\n",prev->pred,prev->nloop,(rq->qtable)[prev->pred][prev->nloop][0],(rq->qtable)[prev->pred][prev->nloop][1]);
+		//int remain;
+		//struct cfs_rq *cfs_rq = &rq->cfs;
+		//if(s->on_rq){
+		//	update_curr(cfs_rq);
+		//}
+		//u64 now = rq_clock_task(rq);
+		//u64 new_remain = prev->se.sum_exec_runtime + now - prev->se.exec_start;
+
+		//remain = (int)(new_remain/10000000);
+		printk("q value: pred %d, exec %d 0: %d 1: %d\n",prev->pred,remain,(rq->qtable)[prev->pred][remain][0],(rq->qtable)[prev->pred][remain][1]);
+		if(remain > 1900){
+			remain = 1900;
+		}
 		if(prev->rn < 10){
 			action = 0;
 		}else if(prev->rn < 20){
 			action = 1;
 		}else{
-			if ((rq->qtable)[prev->pred][prev->nloop][0] < (rq->qtable)[prev->pred][prev->nloop][1]){
+			if ((rq->qtable)[prev->pred][remain][0] < (rq->qtable)[prev->pred][remain][1]){
 				action = 1;
 			}else{
 				action = 0;
@@ -4260,12 +4277,14 @@ static void __sched notrace __schedule(bool preempt)
 		//update prev state
 		rq->lastAction = action;
 		rq->lasts1 = prev->pred;
-		rq->lasts2 = prev->nloop;
+		rq->lasts2 = remain;
+
 	}
 	if(prev->pred>0){
-		u64 n2 = rq_clock_task(rq);
-        	u64 n1 = rq->ghoststart;
-                printk("schedule period %llu %llu %llu %llu\n",n1,n2,n2-n1,(n2-n1)/1000000);
+		//u64 n2 = rq_clock_task(rq);
+		//u64 n2 = ktime_get_ns();
+        	//u64 n1 = prev->ghoststart;
+                printk("schedule system time %llu\n", prev->se.sum_exec_runtime/1000000);
         }
 	if(action){
 		next = prev;
@@ -4309,9 +4328,10 @@ static void __sched notrace __schedule(bool preempt)
 		rq->clock_update_flags &= ~(RQCF_ACT_SKIP|RQCF_REQ_SKIP);
 		rq_unlock_irq(rq, &rf);
 	}
-	if(prev->pred>0){
-		rq->ghoststart = rq_clock_task(rq);
-	}
+	//if(prev->pred>0){
+	//rq->ghoststart = rq_clock_task(rq);
+	//next->ghoststart = ktime_get_ns();
+	//}
 	balance_callback(rq);
 }
 

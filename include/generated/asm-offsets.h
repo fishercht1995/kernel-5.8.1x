@@ -39,7 +39,7 @@
 
 
 #define TASK_threadsp 5016 /* offsetof(struct task_struct, thread.sp) */
-#define TASK_stack_canary 2304 /* offsetof(struct task_struct, stack_canary) */
+#define TASK_stack_canary 2312 /* offsetof(struct task_struct, stack_canary) */
 
 #define TASK_addr_limit 5136 /* offsetof(struct task_struct, thread.addr_limit) */
 

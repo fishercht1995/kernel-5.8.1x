@@ -684,6 +684,7 @@ struct task_struct {
 	int				nloop;	
 	int				rn;
 	u64				ghoststart;
+	u64				accutime;
 #ifdef CONFIG_CGROUP_SCHED
 	struct task_group		*sched_task_group;
 #endif
