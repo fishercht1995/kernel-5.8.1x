@@ -4190,6 +4190,7 @@ static void __sched notrace __schedule(bool preempt)
 	action = 0;	
 	int reward;
 	reward = 0;
+	int add;
 	if(prev->pred != 0){
 		//q: how to update reward, since reward and next state should be on the next step, 
 		//herefore, for every rq, it should store prev state tuple, prev action
@@ -4207,24 +4208,29 @@ static void __sched notrace __schedule(bool preempt)
 		int remain;
 		u64 now = rq_clock_task(rq);
                 u64 new_remain = prev->se.sum_exec_runtime + now - prev->se.exec_start;
-
+		u64 new_add = now - prev->se.exec_start;
                 remain = (int)(new_remain/10000000);
+		add = (int)(new_remain/10000000);
+		if(!s->on_rq){
+			add = rq->lasts3;
+		}
+		//rq->last3 = add;
 		//update qtable;
 		//Q[state,action] = Q[state,action] + lr*(reward+gamma*max(Q[newstate,:])-Q[state,action]
 		if(rq->lastState && rq->lastAction == 1){
 
 			int prev_Q;
 			int new_Q;
-			prev_Q = (rq->qtable)[rq->lasts1][rq->lasts2][rq->lastAction];
-			if ((rq->qtable)[prev->pred][remain][0] <= (rq->qtable)[prev->pred][remain][1]){
-				new_Q = (rq->qtable)[prev->pred][remain][1];
+			prev_Q = (rq->qtable)[rq->lasts1][rq->lasts2][add][rq->lastAction];
+			if ((rq->qtable)[prev->pred][remain][add][0] <= (rq->qtable)[prev->pred][remain][add][1]){
+				new_Q = (rq->qtable)[prev->pred][remain][add][1];
 			}else{
-				new_Q = (rq->qtable)[prev->pred][remain][0];
+				new_Q = (rq->qtable)[prev->pred][remain][add][0];
 			}
 			int update_Q;
 			update_Q = prev_Q + 2 * (reward + 3*new_Q/10 - prev_Q)/10;
-			(rq->qtable)[rq->lasts1][rq->lasts2][rq->lastAction] = update_Q;
-			printk("update Q %d\n", update_Q);
+			(rq->qtable)[rq->lasts1][rq->lasts2][add][rq->lastAction] = update_Q;
+			printk("update Q %d; add %d\n", update_Q,add);
 		}
 		//int qv;
 		//pick action
@@ -4245,7 +4251,7 @@ static void __sched notrace __schedule(bool preempt)
 		//u64 new_remain = prev->se.sum_exec_runtime + now - prev->se.exec_start;
 
 		//remain = (int)(new_remain/10000000);
-		printk("q value: pred %d, exec %d 0: %d 1: %d\n",prev->pred,remain,(rq->qtable)[prev->pred][remain][0],(rq->qtable)[prev->pred][remain][1]);
+		printk("q value: pred %d, exec %d 0: %d 1: %d; add %d\n",prev->pred,remain,(rq->qtable)[prev->pred][remain][add][0],(rq->qtable)[prev->pred][remain][add][1],add);
 		if(remain > 1900){
 			remain = 1900;
 		}
@@ -4254,7 +4260,7 @@ static void __sched notrace __schedule(bool preempt)
 		}else if(prev->rn < 20){
 			action = 1;
 		}else{
-			if ((rq->qtable)[prev->pred][remain][0] < (rq->qtable)[prev->pred][remain][1]){
+			if ((rq->qtable)[prev->pred][remain][add][0] < (rq->qtable)[prev->pred][remain][add][1]){
 				action = 1;
 			}else{
 				action = 0;
@@ -4278,6 +4284,11 @@ static void __sched notrace __schedule(bool preempt)
 		rq->lastAction = action;
 		rq->lasts1 = prev->pred;
 		rq->lasts2 = remain;
+		rq->lasts3 = add;
+		
+
+		//here first forbid RL model 
+		//action = 0;
 
 	}
 	if(prev->pred>0){
